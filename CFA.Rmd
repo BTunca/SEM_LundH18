@@ -1,0 +1,164 @@
+---
+title: "Confirmatory Factor Analysis"
+subtitle: "Part I: Single-Factor Models"
+author: "Burak Tunca, PhD"
+date: Lund, Fall 2018
+output: html_document
+---
+
+>Note: This document is based on the "semoutput" R package developed by Jason Tsukahara. For more information please see: https://github.com/dr-JT/semoutput
+
+```{r setup, include=FALSE}
+#libraries to be loaded
+library(knitr)
+library(rmarkdown)
+library(readr)
+library(lavaan)
+library(semPlot)
+#library(sjPlot)
+library(semoutput)
+library(resultsoutput)
+library(corrplot)
+library(PerformanceAnalytics)
+library(summarytools)
+```
+
+# Confirmatory Factor Analysis
+
+## Dataset
+
+For this exercise we will be using the "Political Democracy" dataset. For more information about this dataset run the following code in the R Console: <?PoliticalDemocracy>
+
+```{r load_data}
+#load the political democracy dataset
+data <- PoliticalDemocracy
+
+#View first few rows of the dataset
+head(data)
+
+
+#descriptive statistics of the dataset
+descriptives(data)
+descr(data)
+view(dfSummary(data))
+
+#correlations between the variables
+round(cor(data),2)
+
+#fancy correlations with the corrplot package
+M <- cor(data)
+corrplot.mixed(M)
+
+#fancy correlations with the PerformanceAnalytics Package
+chart.Correlation(data)
+```
+
+## One Factor Models
+
+We would like to model the latent factor "Industrialization in 1960" with the following manifest variables:
+  
+* x1 The gross national product (GNP) per capita in 1960
+* x2 The inanimate energy consumption per capita in 1960
+* x3 The percentage of the labor force in industry in 1960
+  
+```{r CFA for a one factor model}
+
+# factors is a list of the latent factor names. To be used for printing lavaan output to nice looking tables. 
+# name the latent factor "ind60"
+factors <- c("ind60")
+
+# Specify the model parameters. Name the model "ind60model"
+ind60model <- "ind60 =~ x1 + x2 + x3" 
+
+# CFA for our model "ind60model"
+ind60fit <- cfa(model=ind60model, data=data, 
+                mimic="lavaan", missing="ML", std.lv = FALSE)
+
+summary(ind60fit, standardized=TRUE, fit.measures=TRUE)
+```
+
+### Summary Output
+
+```{r one factor CFA Summary}
+## This tab will print out summary result tables with the most important information. Fit stats, standardized path values, etc...
+sem.sig(ind60fit)
+sem.fitmeasures(ind60fit)
+sem.factorloadings(ind60fit)
+sem.factorcor(ind60fit, factors = factors)
+sem.factorvar(ind60fit, factors = factors)
+sem.rsquared(ind60fit)
+```
+
+### Path Diagram
+
+```{r one factor CFA diagram}
+## This tab will print out a model diagram.
+semPaths(ind60fit, latents = factors, 
+         whatLabels = "std", edge.label.cex = .5, layout = "tree", rotation = 2,
+         style = "lisrel", intercepts = FALSE, residuals = TRUE, curve = 1,
+         curvature = 3, nCharNodes = 8, sizeMan = 6, sizeMan2 = 3, 
+         optimizeLatRes = TRUE, edge.color = "#000000")
+```
+
+## Multi-Factor Models
+
+In addition to the "Industrialization in 1960 (ind60)" variable above, we would like to include "Democracy in 1960 (dem60)" and "Democracy in 1965 (dem65)" latent factors using the following manifest variables:
+
+* y1 Expert ratings of the freedom of the press in 1960
+
+* y2 The freedom of political opposition in 1960
+
+* y3 The fairness of elections in 1960
+
+* y4 The effectiveness of the elected legislature in 1960
+
+* y5 Expert ratings of the freedom of the press in 1965
+
+* y6 The freedom of political opposition in 1965
+
+* y7 The fairness of elections in 1965
+
+* y8 The effectiveness of the elected legislature in 1965
+
+```{r CFA for multi-factor models}
+# name the latent factors 
+factors <- c("ind60", "dem60")
+
+# Specify the model parameters. Name the model "cfamodel"
+cfamodel <- "
+            ind60 =~ x1 + x2 + x3
+            dem60 =~ y1 + y2 + y3 + y4
+            "
+
+# CFA for our model 
+cfafit <- cfa(model=cfamodel, data=data, 
+               mimic="lavaan", missing="ML", std.lv = FALSE)
+
+summary(cfafit, standardized=TRUE, fit.measures=TRUE)
+```
+
+### Summary Output
+
+```{r CFA Summary}
+## This tab will print out summary result tables with the most important information. Fit stats, standardized path values, etc...
+sem.sig(cfafit)
+sem.fitmeasures(cfafit)
+sem.factorloadings(cfafit)
+sem.factorcor(cfafit, factors = factors, standardized = TRUE)
+sem.factorvar(cfafit, factors = factors)
+sem.rsquared(cfafit)
+```
+
+### Path Diagram
+
+```{r CFA diagram}
+## This tab will print out a model diagram.
+semPaths(cfafit, latents = factors, 
+         whatLabels = "std", #view standardized parameters
+         edge.label.cex = 0.8, #fontsize 
+         style = "lisrel", 
+         intercepts = FALSE, residuals = TRUE, curve = 1,
+         curvature = 3, nCharNodes = 8, sizeMan = 6, sizeMan2 = 3, 
+         optimizeLatRes = TRUE)
+```
+
